@@ -3,6 +3,7 @@ import 'package:full_app2/module/ArchivedScreen/ArchivedScreen.dart';
 import 'package:full_app2/module/DoneScreen/DoneScreen.dart';
 import 'package:full_app2/module/TasksScreen/TasksScreen.dart';
 import 'package:full_app2/shared/Components/components.dart';
+import 'package:full_app2/shared/Components/constants.dart';
 import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -29,7 +30,7 @@ class _TodoHomescreenState extends State<TodoHomescreen> {
     ArchivedScreen()
   ];
 
-  List<String> SelectedTitle = ["TasksScreen", "DoneScreen", "ArchivedScreen"];
+  List<String> SelectedTitle = ["TaskScreen", "DoneScreen", "ArchivedScreen"];
 
   @override
   void initState() {
@@ -52,98 +53,110 @@ class _TodoHomescreenState extends State<TodoHomescreen> {
             if (formKey.currentState!.validate()) {
               InsertTo_Database(taskController, dateController, timeController)
                   .then((value) {
-                setState(() {
-                  actionButton = Icons.edit;
+                GetFrom_Database(database).then((value) {
+                  setState(() {
+                    tasks = value;
+                    isOpened_State = false;
+                    actionButton = Icons.edit;
+                  });
+                  Navigator.pop(context);
                 });
-                Navigator.pop(context);
-                isOpened_State = false;
               });
             }
           } else {
             setState(() {
               actionButton = Icons.add;
-              taskController.text = "";
-              dateController.text = "";
-              timeController.text = "";
+              taskController.clear();
+              dateController.clear();
+              timeController.clear();
             });
             isOpened_State = true;
-            ScaffoldKey.currentState?.showBottomSheet((context) => Container(
-                  padding: EdgeInsets.all(20),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        defaultTextFormField(
-                            validate: (value) {
-                              if (value == null || value.isEmpty) {
-                                return "Task Title is required";
-                              }
-                              return null;
-                            },
-                            controller: taskController,
-                            labelText: "Task Title",
-                            textType: TextInputType.datetime,
-                            prefixIcon: Icons.task_sharp),
-                        SizedBox(
-                          height: 25,
-                        ),
-                        defaultTextFormField(
-                          validate: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "date is required";
-                            }
-                            return null;
-                          },
-                          controller: dateController,
-                          labelText: "Date",
-                          textType: TextInputType.datetime,
-                          prefixIcon: Icons.date_range,
-                          onTap: () {
-                            showDatePicker(
-                                    context: context,
-                                    firstDate: DateTime.now(),
-                                    lastDate: DateTime(2050))
-                                .then((value) {
-                              if (value != null) {
-                                {
-                                  dateController.text =
-                                      DateFormat.yMMMd().format(value);
+            ScaffoldKey.currentState
+                ?.showBottomSheet((context) => Container(
+                      padding: EdgeInsets.all(20),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            defaultTextFormField(
+                                validate: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return "Task Title is required";
+                                  }
+                                  return null;
+                                },
+                                controller: taskController,
+                                labelText: "Task Title",
+                                textType: TextInputType.datetime,
+                                prefixIcon: Icons.task_sharp),
+                            SizedBox(
+                              height: 25,
+                            ),
+                            defaultTextFormField(
+                              validate: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "date is required";
                                 }
-                              }
-                            });
-                          },
+                                return null;
+                              },
+                              controller: dateController,
+                              labelText: "Date",
+                              textType: TextInputType.datetime,
+                              prefixIcon: Icons.date_range,
+                              onTap: () {
+                                showDatePicker(
+                                        context: context,
+                                        firstDate: DateTime.now(),
+                                        lastDate: DateTime(2050))
+                                    .then((value) {
+                                  if (value != null) {
+                                    {
+                                      dateController.text =
+                                          DateFormat.yMMMd().format(value);
+                                    }
+                                  }
+                                });
+                              },
+                            ),
+                            SizedBox(
+                              height: 25,
+                            ),
+                            defaultTextFormField(
+                              validate: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "date is required";
+                                }
+                                return null;
+                              },
+                              controller: timeController,
+                              labelText: "Time",
+                              textType: TextInputType.datetime,
+                              prefixIcon: Icons.lock_clock,
+                              onTap: () {
+                                showTimePicker(
+                                        context: context,
+                                        initialTime: TimeOfDay.now())
+                                    .then((value) {
+                                  if (value != null) {
+                                    timeController.text =
+                                        value!.format(context).toString();
+                                  }
+                                });
+                              },
+                            ),
+                          ],
                         ),
-                        SizedBox(
-                          height: 25,
-                        ),
-                        defaultTextFormField(
-                          validate: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "date is required";
-                            }
-                            return null;
-                          },
-                          controller: timeController,
-                          labelText: "Time",
-                          textType: TextInputType.datetime,
-                          prefixIcon: Icons.lock_clock,
-                          onTap: () {
-                            showTimePicker(
-                                    context: context,
-                                    initialTime: TimeOfDay.now())
-                                .then((value) {
-                              if (value != null) {
-                                timeController.text =
-                                    value!.format(context).toString();
-                              }
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ));
+                      ),
+                    ))
+                .closed
+                .then((value) {
+              setState(() {
+                actionButton = Icons.edit;
+              });
+
+              isOpened_State = false;
+            });
           }
 
           // InsertTo_Database("task1", "jan2000", "12PM");
@@ -173,7 +186,9 @@ class _TodoHomescreenState extends State<TodoHomescreen> {
         fixedColor: Colors.teal,
         unselectedItemColor: Colors.black,
       ),
-      body: Screen_Selected[Index],
+      body: tasks.length == 0
+          ? Center(child: CircularProgressIndicator())
+          : Screen_Selected[Index],
     );
   }
 
@@ -189,8 +204,13 @@ class _TodoHomescreenState extends State<TodoHomescreen> {
       }).catchError((error) {
         print("Error while creating table  ${error.toString()}");
       });
-    }, onOpen: (database) {
-      print("database is opend");
+    }, onOpen: (database) async {
+      await GetFrom_Database(database).then((value) {
+        setState(() {
+          tasks = value;
+        });
+        print("table is Opened");
+      });
     });
   }
 
@@ -199,12 +219,16 @@ class _TodoHomescreenState extends State<TodoHomescreen> {
     return await database?.transaction((txn) async {
       await txn
           .rawInsert(
-              "INSERT INTO tasks(title, date,time,status) VALUES ('$task', '$date','$time','New')")
+              "INSERT INTO tasks(title, date,time,status) VALUES ('${task.text}','${date.text}','${time.text}','NEW')")
           .then((value) {
         print("$value Inserted Sucessfully");
       }).catchError((error) {
         print("Error when inserting data ${error.toString()}");
       });
     });
+  }
+
+  Future<List<Map>> GetFrom_Database(database) async {
+    return await database!.rawQuery("SELECT * FROM tasks");
   }
 }
