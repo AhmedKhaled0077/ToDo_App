@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:full_app2/module/ArchivedScreen/ArchivedScreen.dart';
 import 'package:full_app2/module/DoneScreen/DoneScreen.dart';
 import 'package:full_app2/module/TasksScreen/TasksScreen.dart';
+import 'package:full_app2/shared/Components/components.dart';
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
 class TodoHomescreen extends StatefulWidget {
@@ -12,7 +14,14 @@ class TodoHomescreen extends StatefulWidget {
 }
 
 class _TodoHomescreenState extends State<TodoHomescreen> {
+  var ScaffoldKey = GlobalKey<ScaffoldState>();
+  var formKey = GlobalKey<FormState>();
+  var taskController = TextEditingController();
+  var dateController = TextEditingController();
+  var timeController = TextEditingController();
+  bool isOpened_State = false;
   int Index = 0;
+  IconData actionButton = Icons.edit;
   Database? database;
   List<Widget> Screen_Selected = [
     TasksScreen(),
@@ -32,23 +41,122 @@ class _TodoHomescreenState extends State<TodoHomescreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: ScaffoldKey,
       appBar: AppBar(
         title: Text(SelectedTitle[Index]),
         backgroundColor: Colors.teal,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          if (isOpened_State == true) {
+            if (formKey.currentState!.validate()) {
+              InsertTo_Database(taskController, dateController, timeController)
+                  .then((value) {
+                setState(() {
+                  actionButton = Icons.edit;
+                });
+                Navigator.pop(context);
+                isOpened_State = false;
+              });
+            }
+          } else {
+            setState(() {
+              actionButton = Icons.add;
+              taskController.text = "";
+              dateController.text = "";
+              timeController.text = "";
+            });
+            isOpened_State = true;
+            ScaffoldKey.currentState?.showBottomSheet((context) => Container(
+                  padding: EdgeInsets.all(20),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        defaultTextFormField(
+                            validate: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Task Title is required";
+                              }
+                              return null;
+                            },
+                            controller: taskController,
+                            labelText: "Task Title",
+                            textType: TextInputType.datetime,
+                            prefixIcon: Icons.task_sharp),
+                        SizedBox(
+                          height: 25,
+                        ),
+                        defaultTextFormField(
+                          validate: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "date is required";
+                            }
+                            return null;
+                          },
+                          controller: dateController,
+                          labelText: "Date",
+                          textType: TextInputType.datetime,
+                          prefixIcon: Icons.date_range,
+                          onTap: () {
+                            showDatePicker(
+                                    context: context,
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime(2050))
+                                .then((value) {
+                              if (value != null) {
+                                {
+                                  dateController.text =
+                                      DateFormat.yMMMd().format(value);
+                                }
+                              }
+                            });
+                          },
+                        ),
+                        SizedBox(
+                          height: 25,
+                        ),
+                        defaultTextFormField(
+                          validate: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "date is required";
+                            }
+                            return null;
+                          },
+                          controller: timeController,
+                          labelText: "Time",
+                          textType: TextInputType.datetime,
+                          prefixIcon: Icons.lock_clock,
+                          onTap: () {
+                            showTimePicker(
+                                    context: context,
+                                    initialTime: TimeOfDay.now())
+                                .then((value) {
+                              if (value != null) {
+                                timeController.text =
+                                    value!.format(context).toString();
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ));
+          }
+
           // InsertTo_Database("task1", "jan2000", "12PM");
-          InsertTo_Database();
         },
         backgroundColor: Colors.teal,
         splashColor: Colors.tealAccent,
         child: Icon(
-          Icons.add,
+          actionButton,
           color: Colors.white,
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.grey[200],
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.menu), label: "Tasks"),
           BottomNavigationBarItem(
@@ -87,13 +195,11 @@ class _TodoHomescreenState extends State<TodoHomescreen> {
   }
 
   Future InsertTo_Database(
-      //  @required task, @required date, @required time
-      ) async {
+      @required task, @required date, @required time) async {
     return await database?.transaction((txn) async {
       await txn
           .rawInsert(
-              //    "INSERT INTO tasks(title, date,time,status) VALUES ('$task', '$date','$time','New')")
-              "INSERT INTO tasks(title, date,time,status) VALUES ('taskkk', 'ddate','ttime','New')")
+              "INSERT INTO tasks(title, date,time,status) VALUES ('$task', '$date','$time','New')")
           .then((value) {
         print("$value Inserted Sucessfully");
       }).catchError((error) {
